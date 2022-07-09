@@ -12,8 +12,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.set('view engine', 'pug')
 
+const absolutePath = __dirname + "/views/pug";
+console.log(absolutePath);
+
 app.route('/').get((req, res) => {
-  res.render('Load your view here');
+  res.render("pug/index.pug", {title: 'Hello', message: 'Please login'});
 });
 
 const PORT = process.env.PORT || 3000;
