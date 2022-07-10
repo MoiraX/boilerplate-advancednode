@@ -4,14 +4,12 @@ const express = require('express');
 const myDB = require('./connection');
 const session = require('express-session');
 const passport = require('passport');
-const ObjectID = require('mongodb').ObjectID;
-const LocalStrategy = require('passport-local');
-const bcrypt = require('bcrypt');
 const routes = require('./routes.js');
+const auth = require('./auth.js');
 const fccTesting = require('./freeCodeCamp/fcctesting.js');
 
 const app = express();
-app.set('view engine', 'pug')
+app.set('view engine', 'pug');
 
 
 fccTesting(app); //For FCC testing purposes
@@ -36,36 +34,13 @@ myDB(async client => {
   const myDataBase = await client.db('database').collection('users');
 
   routes(app, myDataBase);
+  auth(app, myDataBase);
 
-  passport.serializeUser((user, done) => {
-    done(null, user._id);
-  });
-
-  passport.deserializeUser((id, done) => {
-    myDataBase.findOne({ _id: new ObjectID(id) }, (err, doc) => {
-      done(null, doc);
-    });
-  });
-
-  passport.use(new LocalStrategy(
-      function(username, password, done) {
-        myDataBase.findOne({ username: username }, function (err, user) {
-          console.log('User '+ username +' attempted to log in.');
-          if (err) { return done(err); }
-          if (!user) { return done(null, false); }
-          if (!bcrypt.compareSync(password, user.password)) { return done(null, false); }
-          return done(null, user);
-        });
-      }
-    ));
-
-  }).catch(e => {
+}).catch(e => {
     app.route('/').get((req, res) => {
       res.render('pug/index.pug', { title: e, message: 'Unable to login' });
   });
 });
-
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
