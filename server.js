@@ -42,8 +42,8 @@ myDB(async client => {
     res.redirect('/profile');
   });
 
-  app.route('/profile').get((req, res) => {
-    res.render("pug/profile.pug");
+  app.route('/profile').get(ensureAuthenticated, (req, res) => {
+    res.render("pug/profile");
   });
 
   passport.serializeUser((user, done) => {
@@ -72,16 +72,14 @@ myDB(async client => {
     app.route('/').get((req, res) => {
       res.render('pug/index.pug', { title: e, message: 'Unable to login' });
   });
-
-  /*
-  app.post('/login', passport.authenticate('local', { failureRedirect: '/' }),
-    function(req, res) {
-      res.redirect('/profile');
-    });
-  */  
-
-  
 });
+
+function ensureAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect('/');
+};
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
