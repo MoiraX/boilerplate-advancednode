@@ -46,6 +46,28 @@ myDB(async client => {
     res.render("pug/profile", {username: req.user.username});
   });
 
+  /*
+  app.route('/logout').get((req, res) => {
+    req.logout();
+    res.redirect('/');
+  });
+  */
+
+  //  from https://stackoverflow.com/questions/72336177/error-reqlogout-requires-a-callback-function
+  //  FCC tests use GET 
+  app.get('/logout', function(req, res, next) {
+    req.logout(function(err) {
+      if (err) { return next(err); }
+      res.redirect('/');
+    });
+  });
+
+  app.use((req, res, next) => {
+    res.status(404)
+      .type('text')
+      .send('Not Found');
+  });
+
   passport.serializeUser((user, done) => {
     done(null, user._id);
   });
