@@ -34,7 +34,16 @@ myDB(async client => {
   const myDataBase = await client.db('database').collection('users');
 
   app.route('/').get((req, res) => {
-    res.render("pug/index.pug", {title: 'Connected to Database', message: 'Please login'});
+    res.render("pug/index.pug", {title: 'Connected to Database', message: 'Please login', showLogin: true});
+  });
+
+  
+  app.route('/login').post(passport.authenticate('local', { failureRedirect: '/' }), (req, res) => {
+    res.redirect('/profile');
+  });
+
+  app.route('/profile').get((req, res) => {
+    res.render("pug/profile.pug");
   });
 
   passport.serializeUser((user, done) => {
@@ -47,23 +56,31 @@ myDB(async client => {
     });
   });
 
+  passport.use(new LocalStrategy(
+      function(username, password, done) {
+        myDataBase.findOne({ username: username }, function (err, user) {
+          console.log('User '+ username +' attempted to log in.');
+          if (err) { return done(err); }
+          if (!user) { return done(null, false); }
+          if (password !== user.password) { return done(null, false); }
+          return done(null, user);
+        });
+      }
+    ));
+
   }).catch(e => {
     app.route('/').get((req, res) => {
-      res.render('pug', { title: e, message: 'Unable to login' });
+      res.render('pug/index.pug', { title: e, message: 'Unable to login' });
   });
 
-  passport.use(new LocalStrategy(
-    function(username, password, done) {
-      myDataBase.findOne({ username: username }, function (err, user) {
-        console.log('User '+ username +' attempted to log in.');
-        if (err) { return done(err); }
-        if (!user) { return done(null, false); }
-        if (password !== user.password) { return done(null, false); }
-        return done(null, user);
-      });
-    }
-  ));
+  /*
+  app.post('/login', passport.authenticate('local', { failureRedirect: '/' }),
+    function(req, res) {
+      res.redirect('/profile');
+    });
+  */  
 
+  
 });
 
 const PORT = process.env.PORT || 3000;
