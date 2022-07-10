@@ -7,6 +7,7 @@ const passport = require('passport');
 const ObjectID = require('mongodb').ObjectID;
 const LocalStrategy = require('passport-local');
 const bcrypt = require('bcrypt');
+const routes = require('./routes.js');
 const fccTesting = require('./freeCodeCamp/fcctesting.js');
 
 const app = express();
@@ -34,71 +35,7 @@ console.log(absolutePath);
 myDB(async client => {
   const myDataBase = await client.db('database').collection('users');
 
-  app.route('/').get((req, res) => {
-    res.render("pug/index.pug", {title: 'Connected to Database', message: 'Please login', showLogin: true, showRegistration: true});
-  });
-
-  app.route('/login').post(passport.authenticate('local', { failureRedirect: '/' }), (req, res) => {
-    res.redirect('/profile');
-  });
-
-  app.route('/profile').get(ensureAuthenticated, (req, res) => {
-    res.render("pug/profile", {username: req.user.username});
-  });
-
-  /*
-  app.route('/logout').get((req, res) => {
-    req.logout();
-    res.redirect('/');
-  });
-  */
-
-  //  from https://stackoverflow.com/questions/72336177/error-reqlogout-requires-a-callback-function
-  //  FCC tests use GET 
-  app.get('/logout', function(req, res, next) {
-    req.logout(function(err) {
-      if (err) { return next(err); }
-      res.redirect('/');
-    });
-  });
-
-  app.route('/register')
-  .post((req, res, next) => {
-    myDataBase.findOne({ username: req.body.username }, function(err, user) {
-      if (err) {
-        next(err);
-      } else if (user) {
-        res.redirect('/');
-      } else {
-        const hash = bcrypt.hashSync(req.body.password, 12);
-        myDataBase.insertOne({
-          username: req.body.username,
-          password: hash
-        },
-          (err, doc) => {
-            if (err) {
-              res.redirect('/');
-            } else {
-              // The inserted document is held within
-              // the ops property of the doc
-              next(null, doc.ops[0]);
-            }
-          }
-        )
-      }
-    })
-  },
-    passport.authenticate('local', { failureRedirect: '/' }),
-    (req, res, next) => {
-      res.redirect('/profile');
-    }
-  );
-
-  app.use((req, res, next) => {
-    res.status(404)
-      .type('text')
-      .send('Not Found');
-  });
+  routes(app, myDataBase);
 
   passport.serializeUser((user, done) => {
     done(null, user._id);
@@ -128,12 +65,7 @@ myDB(async client => {
   });
 });
 
-function ensureAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  res.redirect('/');
-};
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
